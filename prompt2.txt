@@ -1,0 +1,2 @@
+I will give you a  list of companies. I want you to remove the common comany name suffixed such as "private limited" or 'pte ltd" 
+from the list. Just focus on the main keywords in the name. It is like doing a TFIDF on the company names. Are you ready?
