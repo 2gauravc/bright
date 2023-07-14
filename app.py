@@ -45,52 +45,81 @@ def convert_results_table(search_res_json, ename):
                               'desc': desc, 'media': media, 'link': link})
     return(results_df)
 
+def chatgpt_prompt(ename, res_df):
+    file = open('prompt.txt', mode = 'r')
+    ptxt = file.readlines()
+    enames_l = enames[0].split(',')
+    file.close()
+    
+    all_links = '\n'.join(map(str,search_links))
+    prompt_text = "You are a expert KYC analyst. I need help to identify if there is any adverse news about {}\
+       in the following links. \n {}. \n. In the reply include a 20 word summary of the text in each link and if you find any adverse\
+           news (Yes or No)".format(pname, all_links)
+    return(prompt_text)
+
 
 def main(argv):
+    scrapeon = False 
+    saveon = False 
     try:
-        opts, args = getopt.getopt(argv,"i:", ["entityfile="])
+        opts, args = getopt.getopt(argv,"e:sv", ['entityfile=','scrapeon', 'saveon'])
     except getopt.GetoptError:
             print ('Usage: python app.py --entityfile=<entity file path>')
             sys.exit(2)
     for opt, arg in opts:
-        if opt == '--entityfile':
+        if opt in ('-e', '--entityfile'):
             efile = arg
-    
+        elif opt in ('-s', '--scrapeon'):
+            scrapeon = True 
+        elif opt in ('-v','--saveon'):
+            saveon = True
+        
+        
     file = open(efile, mode = 'r')
     enames = file.readlines()
     enames_l = enames[0].split(',')
     file.close()
     
-    # Google search for the entity name and get the first 20 query links 
-    results = pd.DataFrame()
-    print ("#######################")
-    print ("1. News Scraping")
-    print ("#######################")
-    print("Starting news scraping.")
+    if scrapeon:
+        # Google search for the entity name and get the first 20 query links 
+        results = pd.DataFrame()
+        print ("#######################")
+        print ("1. News Scraping")
+        print ("#######################")
+        print("Starting news scraping.")
    
-    for ename in enames_l:
-        search_result = gsearch(ename)
-        results_df = convert_results_table(search_result, ename)
-        print ("\t Entity: {}. Found {} items.".format(ename, results_df.shape[0]))
-        results = pd.concat([results, results_df])
+        for ename in enames_l:
+            search_result = gsearch(ename)
+            results_df = convert_results_table(search_result, ename)
+            print ("\t Entity: {}. Found {} items.".format(ename, results_df.shape[0]))
+            results = pd.concat([results, results_df])
        
-    print("Finished news scraping. Found {} news items for {} unique entities".format(results.shape[0], results.ename.nunique()))
-    #print(results.head())
+        print("Finished news scraping. Found {} news items for {} unique entities".format(results.shape[0], results.ename.nunique()))
+        if saveon: 
+            from datetime import datetime
+            current_datetime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+            str_current_datetime = str(current_datetime)
+            file_name = 'results'+str_current_datetime+'.csv'
+            results.to_csv(file_name)
 
-    print ("#######################")
-    print ("2. Removing Duplicates")
-    print ("#######################")
+        print ("#######################")
+        print ("2. Removing Duplicates")
+        print ("#######################")
+    else: 
+        results = pd.read_csv('output/results.csv', index_col=[0])
+
     print("Starting duplicate removal.")
-
     # Get Similarity grid by title 
-    df = results.loc[results['ename'] == 'Samsung Electronics']
-    df['sim'] = [difflib.get_close_matches(x, df['title'], cutoff=0.7)  for x in df['title']]
-    sim_df = df.explode('sim')
-    print(pd.crosstab(sim_df.title, sim_df.sim))
-
-    # Remove duplicate items 
-
-    # Find the news items with a credit risk signal 
+    #df = results.loc[results['ename'] == 'Samsung Electronics']
+    #df['sim'] = [difflib.get_close_matches(x, df['title'], cutoff=0.7)  for x in df['title']]
+    #sim_df = df.explode('sim')
+    #sim_df.to_csv('sim.csv')
+    #print(pd.crosstab(sim_df.title, sim_df.sim))
+    print("Finished duplicate removal. Removed 0 records")
+    
+    # Generate the prompt 
+    json_records = results[['ename','title', 'link']].to_json(orient ='records') 
+    print(json_records)
 
     # Send the news items with a credit risk signal to SNS Topic 
 
