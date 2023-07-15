@@ -74,7 +74,6 @@ def main(argv):
         elif opt in ('-v','--saveon'):
             saveon = True
         
-        
     file = open(efile, mode = 'r')
     enames = file.readlines()
     enames_l = enames[0].split(',')
@@ -108,6 +107,8 @@ def main(argv):
     else: 
         results = pd.read_csv('output/results.csv', index_col=[0])
 
+    results['id'] = results.index
+
     print("Starting duplicate removal.")
     # Get Similarity grid by title 
     #df = results.loc[results['ename'] == 'Samsung Electronics']
@@ -118,9 +119,12 @@ def main(argv):
     print("Finished duplicate removal. Removed 0 records")
     
     # Generate the prompt 
-    json_records = results[['ename','title', 'link']].to_json(orient ='records') 
-    print(json_records)
-
+    for ename in results.ename.unique():   
+        json_records = results.loc[results['ename'] == ename, ]\
+            .groupby(['ename']).apply(lambda x: x[['id', 'title']]\
+                                      .to_dict('records'))\
+                                        .reset_index().rename(columns={0:'news_items'}).to_json(orient ='records') 
+        
     # Send the news items with a credit risk signal to SNS Topic 
 
 if __name__ == "__main__":
