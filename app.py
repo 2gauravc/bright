@@ -2,6 +2,9 @@ import boto3
 import sys, getopt 
 import pandas as pd
 import difflib 
+import openai
+import json 
+import os 
 
 def gsearch(query):
     try:
@@ -45,18 +48,30 @@ def convert_results_table(search_res_json, ename):
                               'desc': desc, 'media': media, 'link': link})
     return(results_df)
 
-def chatgpt_prompt(ename, res_df):
+def generate_chatgpt_prompt(ename, json_records):
     file = open('prompt.txt', mode = 'r')
     ptxt = file.readlines()
-    enames_l = enames[0].split(',')
     file.close()
-    
-    all_links = '\n'.join(map(str,search_links))
-    prompt_text = "You are a expert KYC analyst. I need help to identify if there is any adverse news about {}\
-       in the following links. \n {}. \n. In the reply include a 20 word summary of the text in each link and if you find any adverse\
-           news (Yes or No)".format(pname, all_links)
+    all_lines = ''.join(map(str,ptxt))
+    #print(all_lines)
+    prompt_text = all_lines.replace("<<ename>>", ename)
+    prompt_text = prompt_text.replace("<<json>>", str(json_records))
+    #print(prompt_text)
     return(prompt_text)
 
+def get_chatgpt_resp(question): 
+    openai.api_key = os.environ['OPENAI_API_KEY']
+    response = openai.ChatCompletion.create(
+            model='gpt-3.5-turbo',
+            messages=[
+                    {"role":"system","content":"You are a chatbot"},
+                    {"role":"system","content":question}]
+    )
+    result = ''
+    for choice in response.choices:
+        result+=choice.message.content
+
+    return (result)
 
 def main(argv):
     scrapeon = False 
@@ -118,12 +133,15 @@ def main(argv):
     #print(pd.crosstab(sim_df.title, sim_df.sim))
     print("Finished duplicate removal. Removed 0 records")
     
-    # Generate the prompt 
-    for ename in results.ename.unique():   
+    # Prepare the prompt 
+    for ename in results.ename.unique():  
+        
         json_records = results.loc[results['ename'] == ename, ]\
             .groupby(['ename']).apply(lambda x: x[['id', 'title']]\
                                       .to_dict('records'))\
                                         .reset_index().rename(columns={0:'news_items'}).to_json(orient ='records') 
+        prompt_txt = generate_chatgpt_prompt(ename, json_records)
+        print(get_chatgpt_resp(prompt_txt))
         
     # Send the news items with a credit risk signal to SNS Topic 
 
