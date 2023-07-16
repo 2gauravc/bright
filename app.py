@@ -6,6 +6,8 @@ import openai
 import json 
 import os 
 import re
+from io import StringIO
+
 def gsearch(query):
     try:
         from GoogleNews import GoogleNews
@@ -142,7 +144,7 @@ def main(argv):
     print ("3. Starting GPT classification")
     print ("#######################")
     # Prepare the prompt 
-    my_dict = {"Entities":[]}
+    adv_items = []
     for ename in results.ename.unique(): 
         recs = results.loc[results['ename'] == ename, ['id', 'ename', 'title']]
        # if ename == 'Samsung Electronics': 
@@ -150,12 +152,20 @@ def main(argv):
 #                .groupby(['ename']).apply(lambda x: x[['id', 'title']]\
 #                                        .to_dict('records'))\
 #                                            .reset_index().rename(columns={0:'news_items'}).to_json(orient ='records') 
+        print("\t Entity Name {}".format(ename))
         prompt_txt = generate_chatgpt_prompt(ename, recs)
         ch_rep = get_chatgpt_resp(prompt_txt)
-        print(ch_rep)
-        #my_dict['Entities'].append(re.sub('\n', '', ch_rep))
-        #print(my_dict)
+        ch_rep_sio = StringIO(ch_rep)
+        columns = ['id', 'credit_risk', 'signal']
+        ch_rep_df = pd.read_csv(ch_rep_sio, sep=',')
+        # assign column names 
+        ch_rep_df.columns = ch_rep_df.columns.str.strip()
 
+        ch_rep_adv_df = ch_rep_df.loc[ch_rep_df['credit_risk']=='Yes',]
+        print ("\t Found {} news items with adverse news for {}".format(ch_rep_adv_df.shape[0], ename))
+  
+
+  
 
     # Send the news items with a credit risk signal to SNS Topic 
 

@@ -22,12 +22,14 @@ You should reply strictly in the below format:
 
 id, credit_risk, signal 
 
-id - is the same as he input data
+id - is the same as the input data
 credit_risk - Yes or No 
 signal - signal number from the list of typical credit risk signals above 
 
+Please make sure to include the header (id, credit_risk, signal) in the reply. 
+
 Rules for the fields credit_risk and signal: 
-If credit_risk is Yes, there has to be be a signal number. 
+If credit_risk is Yes, there has to be be a signal number (1-7). 
 If credit risk is No, signal has to be 'null'. 
 
 This is your input: 
