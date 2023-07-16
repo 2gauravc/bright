@@ -5,7 +5,7 @@ import difflib
 import openai
 import json 
 import os 
-
+import re
 def gsearch(query):
     try:
         from GoogleNews import GoogleNews
@@ -48,14 +48,19 @@ def convert_results_table(search_res_json, ename):
                               'desc': desc, 'media': media, 'link': link})
     return(results_df)
 
-def generate_chatgpt_prompt(ename, json_records):
-    file = open('prompt.txt', mode = 'r')
+def generate_chatgpt_prompt(ename, recs):
+    file = open('prompt-1.txt', mode = 'r')
     ptxt = file.readlines()
     file.close()
     all_lines = ''.join(map(str,ptxt))
     #print(all_lines)
+    #recs_s = recs.to_string(header=True,index=False,index_names=False).split('\n')
+    # Adding a comma in between each value of list
+    #recs_s = [','.join(ele.split()) for ele in recs_s]
+    recs_s = recs.to_csv(index=False)
+    #print(recs_s)
     prompt_text = all_lines.replace("<<ename>>", ename)
-    prompt_text = prompt_text.replace("<<json>>", str(json_records))
+    prompt_text = prompt_text.replace("<<json>>", str(recs_s))
     #print(prompt_text)
     return(prompt_text)
 
@@ -133,16 +138,25 @@ def main(argv):
     #print(pd.crosstab(sim_df.title, sim_df.sim))
     print("Finished duplicate removal. Removed 0 records")
     
+    print ("#######################")
+    print ("3. Starting GPT classification")
+    print ("#######################")
     # Prepare the prompt 
-    for ename in results.ename.unique():  
-        
-        json_records = results.loc[results['ename'] == ename, ]\
-            .groupby(['ename']).apply(lambda x: x[['id', 'title']]\
-                                      .to_dict('records'))\
-                                        .reset_index().rename(columns={0:'news_items'}).to_json(orient ='records') 
-        prompt_txt = generate_chatgpt_prompt(ename, json_records)
-        print(get_chatgpt_resp(prompt_txt))
-        
+    my_dict = {"Entities":[]}
+    for ename in results.ename.unique(): 
+        recs = results.loc[results['ename'] == ename, ['id', 'ename', 'title']]
+       # if ename == 'Samsung Electronics': 
+#            json_records = results.loc[results['ename'] == ename, ]\
+#                .groupby(['ename']).apply(lambda x: x[['id', 'title']]\
+#                                        .to_dict('records'))\
+#                                            .reset_index().rename(columns={0:'news_items'}).to_json(orient ='records') 
+        prompt_txt = generate_chatgpt_prompt(ename, recs)
+        ch_rep = get_chatgpt_resp(prompt_txt)
+        print(ch_rep)
+        #my_dict['Entities'].append(re.sub('\n', '', ch_rep))
+        #print(my_dict)
+
+
     # Send the news items with a credit risk signal to SNS Topic 
 
 if __name__ == "__main__":

@@ -10,22 +10,21 @@ Typical signals that may indicate credit risk are:
 6. Lawsuits - Lawsuits that can result in a material imapct on the P&L of the company are deemed a credit risk 
 7. Other signals - There is a material credit risk signal; but does not fall under the items 1-6 above. 
 
-You will get the input with news items for one entity. 
+You will get the input with news items. 
 Refer to the below example. It has 2 news items - id 0 and id 1, for the entity Samsung Electronics. 
-{'entity': 'Samsung Electronics', 
-'news_items': 
-    {"id":0,"title":"Quantum Key Distribution (QKD) Market Insights by Business Growth, Development Factors, Revenue Strategies, and ..."},
-    {"id":1,"title":"Software Defined Application And Infrastructure Market Size Growth Analysis By Revenue, Share, Scenario on Latest Trends & Forecast 2022-2031 | NEC Corporation, Dell Inc., Asiasoft Solutions, Nutanix, SUSE"}
-}
+
+id, entity, news_title
+0,'Samsung Electronics', "Quantum Key Distribution (QKD) Market Insights by Business Growth, Development Factors, Revenue Strategies, and ...'
+1, 'Samsung Electronics', '"Software Defined Application And Infrastructure Market Size Growth Analysis By Revenue, Share, Scenario on Latest Trends & Forecast 2022-2031 | NEC Corporation, Dell Inc., Asiasoft Solutions, Nutanix, SUSE'
+2, 'Toyota Motor Corporation', 'Toyota recalls 118k vehicles as airbags may fail to deploy By Investing.com'
 
 You should reply strictly in the below format: 
-{'entity': 'Samsung Electronics', 
-'news_items': 
-    {"id":0,"credit_risk": [Yes, No], "signal": signal number from the above list},
-    {"id":1, "credit_risk": [Yes, No], "signal": signal number from the above list}
-}
 
-Do not inclide extra newline '\n' characters in the output. 
+id, credit_risk, signal 
+
+id - is the same as he input data
+credit_risk - Yes or No 
+signal - signal number from the list of typical credit risk signals above 
 
 Rules for the fields credit_risk and signal: 
 If credit_risk is Yes, there has to be be a signal number. 
