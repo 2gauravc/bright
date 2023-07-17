@@ -7,6 +7,7 @@ import json
 import os 
 import re
 from io import StringIO
+from tabulate import tabulate 
 
 def gsearch(query):
     try:
@@ -163,6 +164,10 @@ def main(argv):
 
         ch_rep_adv_df = ch_rep_df.loc[ch_rep_df['credit_risk']=='Yes',]
         print ("\t Found {} news items with adverse news for {}".format(ch_rep_adv_df.shape[0], ename))
+        if ch_rep_adv_df.shape[0] > 0: 
+            title = pd.merge(ch_rep_adv_df, recs, on='id' )
+            print(tabulate(title[['title']], headers='keys', tablefmt='psql'))
+            #print ("\t \t", title['title'])
   
 
   
