@@ -24,7 +24,14 @@ id, credit_risk, signal
 
 id - is the same as the input data
 credit_risk - Yes or No 
-signal - signal number from the list of typical credit risk signals above 
+signal - signal number and accompanying short text. Refer to the list of credit risk signals below:
+1. Earnings downgrade
+2. Loss of key customers
+3. Regulatory sanction or loss of license
+4. Fear of bankruptcy or actual bankruptcy
+5. Product defects
+6. Lawsuits
+7. Other signals
 
 Please make sure to include the header (id, credit_risk, signal) in the reply. 
 

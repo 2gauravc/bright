@@ -78,8 +78,33 @@ def get_chatgpt_resp(question):
     result = ''
     for choice in response.choices:
         result+=choice.message.content
+    
+    ch_rep_sio = StringIO(result)
+    ch_rep_df = pd.read_csv(ch_rep_sio, sep=',')
 
-    return (result)
+    #print(ch_rep_df.head())
+    # assign column names 
+    columns = ['id', 'credit_risk', 'signal']
+    ch_rep_df.columns = columns
+    ch_rep_df.columns = ch_rep_df.columns.str.strip()
+
+    ch_rep_df['credit_risk'] = ch_rep_df['credit_risk'].str.strip()
+    ch_rep_df['signal'] = ch_rep_df['signal'].str.strip()
+
+
+    return (ch_rep_df)
+
+def process_ename(ename, recs):
+    prompt_txt = generate_chatgpt_prompt(ename, recs)
+    ch_rep_df = get_chatgpt_resp(prompt_txt)
+    print(ch_rep_df)
+    ch_rep_adv_df = ch_rep_df.loc[ch_rep_df['credit_risk']=='Yes',]
+    print(ch_rep_adv_df)
+    print ("\t Found {} news items with adverse news for {}".format(ch_rep_adv_df.shape[0], ename))
+    if ch_rep_adv_df.shape[0] > 0: 
+        title = pd.merge(ch_rep_adv_df, recs, on='id' )
+        print(tabulate(title[['title', 'signal']], headers='keys', tablefmt='psql'))
+        
 
 def main(argv):
     scrapeon = False 
@@ -128,7 +153,7 @@ def main(argv):
         print ("2. Removing Duplicates")
         print ("#######################")
     else: 
-        results = pd.read_csv('output/results.csv', index_col=[0])
+        results = pd.read_csv('results2023-07-19.csv', index_col=[0])
 
     results['id'] = results.index
 
@@ -153,24 +178,8 @@ def main(argv):
 #                .groupby(['ename']).apply(lambda x: x[['id', 'title']]\
 #                                        .to_dict('records'))\
 #                                            .reset_index().rename(columns={0:'news_items'}).to_json(orient ='records') 
-        print("\t Entity Name {}".format(ename))
-        prompt_txt = generate_chatgpt_prompt(ename, recs)
-        ch_rep = get_chatgpt_resp(prompt_txt)
-        ch_rep_sio = StringIO(ch_rep)
-        columns = ['id', 'credit_risk', 'signal']
-        ch_rep_df = pd.read_csv(ch_rep_sio, sep=',')
-        # assign column names 
-        ch_rep_df.columns = ch_rep_df.columns.str.strip()
-
-        ch_rep_adv_df = ch_rep_df.loc[ch_rep_df['credit_risk']=='Yes',]
-        print ("\t Found {} news items with adverse news for {}".format(ch_rep_adv_df.shape[0], ename))
-        if ch_rep_adv_df.shape[0] > 0: 
-            title = pd.merge(ch_rep_adv_df, recs, on='id' )
-            print(tabulate(title[['title']], headers='keys', tablefmt='psql'))
-            #print ("\t \t", title['title'])
-  
-
-  
+        #if ename == ' VanMoof': 
+        process_ename(ename, recs)
 
     # Send the news items with a credit risk signal to SNS Topic 
 
